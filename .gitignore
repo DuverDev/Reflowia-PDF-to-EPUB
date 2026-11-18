@@ -1,0 +1,30 @@
+# Virtual environment
+.venv/
+venv/
+env/
+
+# Salida de libros convertidos
+EPUBs_Kindle/
+
+# Artefactos de compilación PyInstaller
+dist/
+build/
+*.exe
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+
+# Certificados locales
+*.pfx
+*.cer
+
+# Generado automáticamente en build.bat
+version_info.txt
+

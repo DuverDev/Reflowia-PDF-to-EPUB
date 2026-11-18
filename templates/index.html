@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="es">
+<script>
+try {
+  var _t = localStorage.getItem('kec-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', _t);
+  var _l = localStorage.getItem('kec-lang');
+  if (!_l && navigator.language && navigator.language.toLowerCase().startsWith('en')) _l = 'en';
+  document.documentElement.setAttribute('data-lang', _l || 'es');
+} catch(e) {}
+</script>
+<head>
+<meta charset="UTF-8">
+<link rel="icon" href="/static/app_icon_256.png" type="image/png">
+<title>Reflowia PDF to EPUB</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  color-scheme:dark;
+  --bg:#0b141a;--hdr:#1f2c34;--side:#111b21;--chat:#0a1014;
+  --input:#2a3942;--border:#233138;--bubble-s:#005c4b;--bubble-r:#202c33;
+  --accent:#00a884;--accent-h:#06cf9c;--text:#e9edef;--dim:#8696a0;
+  --danger:#ef4444;--match:#cf9a0c;--match-cur:#facc15;
+  --meta-c:rgba(255,255,255,.45);--hover:rgba(255,255,255,.08);
+  --sb:rgba(255,255,255,.13);--sb-h:rgba(255,255,255,.22);
+  --bub-sh:0 1px 1px rgba(0,0,0,.14);
+}
+[data-theme="light"]{
+  color-scheme:light;
+  --bg:#f0f2f5;--hdr:#fff;--side:#fff;--chat:#efeae2;
+  --input:#f0f2f5;--border:#d1d7db;--bubble-s:#d9fdd3;--bubble-r:#fff;
+  --accent:#008069;--accent-h:#00a884;--text:#111b21;--dim:#667781;
+  --danger:#ef4444;--match:#e67e00;--match-cur:#f59e0b;
+  --meta-c:rgba(0,0,0,.45);--hover:rgba(0,0,0,.05);
+  --sb:rgba(0,0,0,.12);--sb-h:rgba(0,0,0,.2);
+  --bub-sh:0 1px 2px rgba(0,0,0,.08);
+}
+html,body{height:100%;overflow:hidden}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column}
+
+.hdr{background:var(--hdr);height:52px;display:flex;align-items:center;padding:0 20px;border-bottom:1px solid var(--border);flex-shrink:0}
+.hdr h1{font-size:15px;font-weight:600;letter-spacing:-.3px}
+.hdr-r{margin-left:auto;display:flex;gap:8px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 14px;border:none;border-radius:8px;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;font-family:inherit;color:#fff;width:auto}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+.btn-p{background:var(--accent)}.btn-p:hover:not(:disabled){background:var(--accent-h)}
+.btn-s{background:var(--input);color:var(--text)}.btn-s:hover:not(:disabled){background:var(--border)}
+.btn-d{background:var(--danger)}.btn-d:hover:not(:disabled){background:#dc2626}
+.btn-w{background:#d97706;color:#fff}.btn-w:hover:not(:disabled){background:#b45309}
+.btn-full{width:100%}
+.btn-row{display:flex;gap:6px}.btn-row .btn{flex:1}
+#lang-btn{font-weight:600}
+.log-badge{background:var(--danger);color:#fff;border-radius:10px;padding:1px 6px;font-size:10px;font-weight:700;margin-left:2px}
+.log-box{background:var(--chat);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-family:Consolas,monospace;font-size:11.5px;height:360px;overflow-y:auto;line-height:1.5}
+.log-line{padding:3px 0;border-bottom:1px solid rgba(255,255,255,.04);word-break:break-word}
+.log-line.ERROR{color:#f87171;font-weight:600}
+.log-line.WARN{color:#fbbf24}
+.log-line.INFO{color:var(--text)}
+.log-ts{color:var(--dim);margin-right:6px}
+.log-mod{background:var(--input);padding:1px 5px;border-radius:4px;font-size:10px;margin-right:6px;color:var(--accent)}
+
+.main{display:flex;flex:1;overflow:hidden}
+.side{width:305px;background:var(--side);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;flex-shrink:0}
+.sec{padding:14px 16px;border-bottom:1px solid var(--border)}
+.sec h3{font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:var(--dim);margin-bottom:10px;font-weight:600}
+
+input[type=text],select{width:100%;padding:7px 10px;background:var(--input);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;font-family:inherit;outline:none;transition:border .15s}
+input:focus,select:focus{border-color:var(--accent)}
+select{cursor:pointer;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238696a0' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:28px}
+select option{background:var(--side);color:var(--text)}
+.func-select{font-weight:600;border-color:var(--accent);padding:8px 28px 8px 10px}
+
+.field{margin-bottom:10px}
+.field label{display:block;font-size:11px;color:var(--dim);margin-bottom:4px;font-weight:500}
+
+.chk-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim);cursor:pointer;user-select:none;margin:8px 0}
+.chk-item input[type=checkbox]{accent-color:var(--accent);width:14px;height:14px;cursor:pointer}
+
+/* ── Caja de Carpeta/Archivo Seleccionado ── */
+.sel-box{background:var(--input);border:1px solid var(--border);border-radius:8px;padding:9px 11px;margin:8px 0 10px;font-size:11.5px}
+.sel-box .sel-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--dim);margin-bottom:3px;font-weight:600}
+.sel-box .sel-val{color:var(--text);font-weight:500;word-break:break-all;line-height:1.35}
+.sel-box.active{border-color:var(--accent)}
+
+/* ── Barras de Progreso ── */
+.pbox{margin-top:10px}
+.pbar-bg{height:7px;background:var(--input);border-radius:4px;overflow:hidden;border:1px solid var(--border)}
+.pbar-fill{height:100%;background:var(--accent);width:0%;transition:width .2s ease}
+.pmeta{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--dim);margin-top:5px;gap:6px}
+.pmeta .pct{font-weight:600;color:var(--text)}
+.eta-box{margin-top:6px;padding:6px 10px;background:rgba(0,168,132,.1);border-radius:6px;font-size:11.5px;color:var(--accent);font-weight:600;display:flex;justify-content:space-between}
+
+.out-row{display:flex;gap:6px}
+.out-row input{flex:1;font-size:11px;color:var(--dim)}
+
+/* ── Stats ── */
+.stat{display:flex;justify-content:space-between;padding:3px 0;font-size:12px}
+.stat .l{color:var(--dim)}.stat .v{font-weight:600}
+
+/* ── Panel Principal (Lista Ligera) ── */
+.chat{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.chat-hdr{background:var(--hdr);padding:0 20px;display:flex;align-items:center;border-bottom:1px solid var(--border);flex-shrink:0;height:48px;gap:12px}
+.chat-hdr .title{font-size:13px;font-weight:600;white-space:nowrap}
+.chat-hdr .sub{font-size:11px;color:var(--dim);white-space:nowrap}
+
+.srch{margin-left:auto;display:flex;align-items:center;gap:4px;background:var(--input);border-radius:8px;padding:3px 6px}
+.srch input{background:transparent;border:none;width:180px;padding:3px 6px;font-size:12px;color:var(--text)}
+.srch input:focus{outline:none}
+.srch .cnt{font-size:10px;color:var(--dim);white-space:nowrap;min-width:42px;text-align:center}
+
+.msgs{flex:1;overflow-y:auto;padding:14px 32px;
+  background-color:var(--chat);
+  background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23ffffff' fill-opacity='.015'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E")}
+[data-theme="light"] .msgs{background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/svg%3E")}
+
+/* ── Filas Ligeras de Archivos ── */
+.item-row{background:var(--bubble-r);border-radius:8px;padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;gap:12px;box-shadow:var(--bub-sh);transition:background .12s}
+.item-row.done{background:var(--bubble-s)}
+.item-icon{width:36px;height:34px;border-radius:7px;background:var(--input);display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:700;color:var(--accent);flex-shrink:0}
+.item-row.done .item-icon{background:rgba(255,255,255,.18);color:#fff}
+[data-theme="light"] .item-row.done .item-icon{background:rgba(0,128,105,.15);color:var(--accent)}
+
+.item-info{flex:1;min-width:0}
+.item-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-sub{font-size:11px;color:var(--dim);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-row.done .item-sub{color:var(--meta-c)}
+
+.item-status{font-size:11.5px;font-weight:500;color:var(--dim);white-space:nowrap}
+.item-row.done .item-status{color:#fff;font-weight:600}
+[data-theme="light"] .item-row.done .item-status{color:var(--accent)}
+.item-status.err{color:var(--danger)}
+.item-status.work{color:var(--match-cur)}
+
+.btn-x{background:none;border:none;color:var(--dim);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:4px}
+.btn-x:hover{color:var(--text);background:var(--hover)}
+
+mark.hl{background:var(--match-cur);color:#1a1a1a;border-radius:2px;padding:0 2px}
+
+.welcome{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--dim);gap:6px;text-align:center;padding:20px;height:100%}
+.welcome h2{font-size:20px;font-weight:300;color:var(--text)}
+.welcome p{font-size:12.5px;max-width:440px;line-height:1.55}
+
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--sb);border-radius:3px}
+
+/* ── Modals ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--side);border:1px solid var(--border);border-radius:14px;max-width:540px;width:100%;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.modal-hdr{padding:18px 22px 12px;border-bottom:1px solid var(--border)}
+.modal-hdr h2{font-size:15px;font-weight:600}
+.modal-body{padding:16px 22px;overflow-y:auto;flex:1}
+.modal-body h3{font-size:13px;font-weight:600;margin:12px 0 5px;color:var(--accent)}
+.modal-body h3:first-child{margin-top:0}
+.modal-body p,.modal-body li{font-size:12px;line-height:1.6;color:var(--dim)}
+.modal-foot{padding:12px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px}
+
+.side-foot{margin-top:auto;padding:12px 16px;border-top:1px solid var(--border);text-align:center}
+.side-foot a{color:var(--dim);font-size:11px;text-decoration:none}
+.side-foot a:hover{color:var(--accent)}
+.side-foot .brand{font-size:10px;color:var(--dim);margin-top:4px;opacity:.6}
+
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <h1 data-i18n="appTitle">Reflowia PDF to EPUB</h1>
+  <div class="hdr-r">
+    <button class="btn btn-s" id="log-btn" onclick="showLogs()">&#128203; <span data-i18n="logBtn">Log</span> <span id="log-badge" class="log-badge hidden">0</span></button>
+    <button class="btn btn-s" id="lang-btn" onclick="toggleLang()">English</button>
+    <button class="btn btn-s" onclick="showManual()" data-i18n="manualBtn">Manual</button>
+    <button class="btn btn-s" id="theme-btn" onclick="toggleTheme()">Modo Oscuro</button>
+  </div>
+</header>
+
+<div class="main">
+  <aside class="side">
+    <!-- MENÚ DESPLEGABLE DE FUNCIONES -->
+    <div class="sec">
+      <h3 data-i18n="secMode">Función Activa</h3>
+      <select id="func-select" class="func-select" onchange="switchFunction(this.value)">
+        <option value="convert" data-i18n="optConvert">&#9889; 1. Convertir PDF a EPUB</option>
+        <option value="usb" data-i18n="optUsb">&#128268; 2. Cargar Libros al Kindle (USB)</option>
+      </select>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- PANEL FUNCIÓN 1: CONVERTIR PDF A EPUB                              -->
+    <!-- ================================================================== -->
+    <div id="panel-convert">
+      <div class="sec">
+        <h3 data-i18n="secSelect">1. Seleccionar y Cargar</h3>
+        <div class="btn-row">
+          <button class="btn btn-s" id="btn-sel-folder" onclick="selectFolder()" data-i18n="btnFolder">&#128193; Carpeta</button>
+          <button class="btn btn-s" id="btn-sel-files" onclick="selectFiles()" data-i18n="btnFiles">&#128196; Archivo PDF</button>
+        </div>
+
+        <label class="chk-item">
+          <input type="checkbox" id="chk-recursive" checked onchange="saveConfig()">
+          <span data-i18n="chkSubfolders">Incluir subcarpetas</span>
+        </label>
+
+        <div class="sel-box" id="sel-box">
+          <div class="sel-lbl" data-i18n="lblSelected">Seleccionado:</div>
+          <div class="sel-val" id="sel-path" data-i18n="noneSelected">Ninguna carpeta o archivo seleccionado</div>
+        </div>
+
+        <button class="btn btn-p btn-full" id="btn-load" onclick="startLoad()" disabled data-i18n="btnLoad">&#128229; Cargar</button>
+
+        <div class="pbox hidden" id="load-pbox">
+          <div class="pbar-bg"><div class="pbar-fill" id="load-pfill"></div></div>
+          <div class="pmeta">
+            <span id="load-ptxt">Cargando...</span>
+            <span class="pct" id="load-ppct">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3 data-i18n="secConvert">2. Convertir a EPUB</h3>
+        <div class="field">
+          <label data-i18n="lblOutDir">Carpeta de salida</label>
+          <div class="out-row">
+            <input type="text" id="f-outdir" readonly>
+            <button class="btn btn-s" onclick="pickOutputFolder()" title="Cambiar carpeta">...</button>
+          </div>
+        </div>
+
+        <button class="btn btn-p btn-full" id="btn-convert" onclick="startConversion('continue')" disabled data-i18n="btnConvert">&#9889; Convertir a EPUB</button>
+        <button class="btn btn-w btn-full hidden" id="btn-conv-retry" onclick="startConversion('retry')" style="margin-top:6px" data-i18n="btnRetry">&#128260; Reintentar Fallidos / Continuar</button>
+        <button class="btn btn-s btn-full hidden" id="btn-conv-force" onclick="startConversion('force_all')" style="margin-top:6px;font-size:11px" data-i18n="btnForceAll">&#128257; Reprocesar todos desde cero</button>
+        <button class="btn btn-d btn-full hidden" id="btn-stop" onclick="stopConversion()" data-i18n="btnStop">&#9209; Detener</button>
+
+        <div class="pbox hidden" id="conv-pbox">
+          <div class="pbar-bg"><div class="pbar-fill" id="conv-pfill"></div></div>
+          <div class="pmeta">
+            <span id="conv-ptxt">Convirtiendo...</span>
+            <span class="pct" id="conv-ppct">0%</span>
+          </div>
+          <div class="eta-box">
+            <span data-i18n="lblEta">Tiempo estimado:</span>
+            <span id="conv-eta">--</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3 data-i18n="secSummary">3. Resumen</h3>
+        <div class="stat"><span class="l" data-i18n="stLoaded">Archivos cargados</span><span class="v" id="st-total">0</span></div>
+        <div class="stat"><span class="l" data-i18n="stConverted">Convertidos a EPUB</span><span class="v" id="st-ok">0</span></div>
+        <div class="stat"><span class="l" data-i18n="stErrPend">Fallidos / Pendientes</span><span class="v" id="st-err-pend">0 / 0</span></div>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn btn-s" onclick="openLocation('output')" data-i18n="btnOpenOut">&#128194; Abrir Salida</button>
+          <button class="btn btn-s" id="btn-clear" onclick="clearQueue()" data-i18n="btnClear">&#128465; Limpiar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================================================================== -->
+    <!-- PANEL FUNCIÓN 2: CARGAR LIBROS AL KINDLE POR CABLE USB             -->
+    <!-- ================================================================== -->
+    <div id="panel-usb" class="hidden">
+      <div class="sec">
+        <h3 data-i18n="usbSecSelect">1. Seleccionar Libros Convertidos</h3>
+        <button class="btn btn-s btn-full" id="btn-usb-conv" onclick="usbSelectConverted()" style="margin-bottom:6px" data-i18n="btnUseConverted">&#128218; Usar Carpeta de EPUBs Convertidos</button>
+        <div class="btn-row">
+          <button class="btn btn-s" id="btn-usb-folder" onclick="usbSelectFolder()" data-i18n="btnFolder">&#128193; Carpeta</button>
+          <button class="btn btn-s" id="btn-usb-files" onclick="usbSelectFiles()" data-i18n="btnBookFiles">&#128196; Libros</button>
+        </div>
+
+        <div class="sel-box" id="usb-sel-box">
+          <div class="sel-lbl" data-i18n="lblSelected">Seleccionado:</div>
+          <div class="sel-val" id="usb-sel-path" data-i18n="noneSelected">Ninguna carpeta o archivo seleccionado</div>
+        </div>
+
+        <button class="btn btn-p btn-full" id="btn-usb-load" onclick="usbStartLoad()" disabled data-i18n="btnLoad">&#128229; Cargar</button>
+
+        <div class="pbox hidden" id="usb-load-pbox">
+          <div class="pbar-bg"><div class="pbar-fill" id="usb-load-pfill"></div></div>
+          <div class="pmeta">
+            <span id="usb-load-ptxt">Cargando...</span>
+            <span class="pct" id="usb-load-ppct">0%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3 data-i18n="usbSecSend">2. Enviar al Kindle por USB</h3>
+        <div class="field">
+          <label data-i18n="lblKindleDir">Dispositivo Kindle / Carpeta 'documents'</label>
+          <select id="f-kindle-detected" class="hidden" onchange="onDetectedKindleChange(this.value)" style="margin-bottom:6px"></select>
+          <div class="out-row">
+            <input type="text" id="f-kindledir" placeholder="Ej: mtp://Kindle Paperwhite/Internal Storage/documents" readonly>
+            <button class="btn btn-s" onclick="usbDetectKindle(false)" title="Detectar Kindle (MTP o USB)">&#128269;</button>
+            <button class="btn btn-s" onclick="usbPickKindleDir()" title="Elegir en Este Equipo (incluye Kindle MTP)">...</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label data-i18n="lblUsbFormat">Adecuación para lectura por USB</label>
+          <select id="f-usb-format" onchange="saveUsbFormat()">
+            <option value="mobi" data-i18n="fmtMobi">Formato Kindle MOBI (.mobi + carpeta .sdr) - Recomendado</option>
+            <option value="azw" data-i18n="fmtAzw">Formato Kindle USB (.azw + carpeta .sdr)</option>
+            <option value="epub" data-i18n="fmtEpub">Copiar EPUB directo (.epub + carpeta .sdr)</option>
+          </select>
+        </div>
+
+        <button class="btn btn-p btn-full" id="btn-usb-send" onclick="usbStartTransfer('continue')" disabled data-i18n="btnUsbSend">&#128242; Enviar al Kindle por USB</button>
+        <button class="btn btn-w btn-full hidden" id="btn-usb-retry" onclick="usbStartTransfer('retry')" style="margin-top:6px" data-i18n="btnRetry">&#128260; Reintentar Fallidos / Continuar</button>
+        <button class="btn btn-s btn-full hidden" id="btn-usb-force" onclick="usbStartTransfer('force_all')" style="margin-top:6px;font-size:11px" data-i18n="btnForceAll">&#128257; Reenviar todos desde cero</button>
+        <button class="btn btn-d btn-full hidden" id="btn-usb-stop" onclick="usbStopTransfer()" data-i18n="btnStop">&#9209; Detener</button>
+
+        <div class="pbox hidden" id="usb-send-pbox">
+          <div class="pbar-bg"><div class="pbar-fill" id="usb-send-pfill"></div></div>
+          <div class="pmeta">
+            <span id="usb-send-ptxt">Enviando...</span>
+            <span class="pct" id="usb-send-ppct">0%</span>
+          </div>
+          <div class="eta-box">
+            <span data-i18n="lblEta">Tiempo estimado:</span>
+            <span id="usb-send-eta">--</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3 data-i18n="secSummary">3. Resumen USB</h3>
+        <div class="stat"><span class="l" data-i18n="stLoaded">Libros cargados</span><span class="v" id="st-usb-total">0</span></div>
+        <div class="stat"><span class="l" data-i18n="stSentKindle">En tu Kindle</span><span class="v" id="st-usb-ok">0</span></div>
+        <div class="stat"><span class="l" data-i18n="stErrPend">Fallidos / Pendientes</span><span class="v" id="st-usb-err-pend">0 / 0</span></div>
+        <div class="btn-row" style="margin-top:10px">
+          <button class="btn btn-s" onclick="openLocation('kindle')" data-i18n="btnOpenKindle">&#128194; Abrir Kindle</button>
+          <button class="btn btn-s" id="btn-usb-clear" onclick="usbClearQueue()" data-i18n="btnClear">&#128465; Limpiar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-foot">
+      <a href="#" onclick="showTerms();return false" data-i18n="termsLink">Términos y Condiciones</a>
+      <div class="brand">DMDevLabs &copy; 2026</div>
+    </div>
+  </aside>
+
+  <!-- ÁREA PRINCIPAL -->
+  <div class="chat">
+    <div class="chat-hdr">
+      <span class="title" id="main-list-title" data-i18n="listTitle">Archivos Cargados</span>
+      <span class="sub" id="ch-sub">0 archivos</span>
+      <div class="srch">
+        <input type="text" id="search" data-i18n-ph="searchPh" placeholder="Filtrar lista... (Ctrl+F)">
+        <span class="cnt" id="s-cnt"></span>
+      </div>
+    </div>
+
+    <div class="msgs" id="msgs"></div>
+  </div>
+</div>
+
+<!-- Modal Log -->
+<div class="modal-overlay hidden" id="log-modal" onclick="if(event.target===this)closeLogs()">
+  <div class="modal" style="max-width:740px">
+    <div class="modal-hdr" style="display:flex;justify-content:space-between;align-items:center">
+      <h2 data-i18n="logModalTitle">&#128203; Registro de Eventos y Errores (Log)</h2>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-s" id="btn-log-all" onclick="setLogFilter('ALL')" style="padding:4px 10px;font-size:11px">Todos</button>
+        <button class="btn btn-s" id="btn-log-err" onclick="setLogFilter('ERROR')" style="padding:4px 10px;font-size:11px">Solo Errores</button>
+        <button class="btn btn-s" onclick="refreshLogs()" style="padding:4px 10px;font-size:11px">&#128260; Actualizar</button>
+      </div>
+    </div>
+    <div class="modal-body">
+      <div class="log-box" id="log-list">Cargando registro...</div>
+    </div>
+    <div class="modal-foot" style="justify-content:space-between">
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-s" onclick="openLocation('logfile')">&#128194; Abrir reflowia.log</button>
+        <button class="btn btn-s" onclick="clearAppLogs()">&#128465; Limpiar Log</button>
+      </div>
+      <button class="btn btn-p" onclick="closeLogs()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Manual -->
+<div class="modal-overlay hidden" id="manual-modal" onclick="if(event.target===this)closeManual()">
+  <div class="modal">
+    <div class="modal-hdr"><h2 data-i18n="manualTitle">Manual de Uso</h2></div>
+    <div class="modal-body">
+      <h3>Menú Desplegable de Funciones</h3>
+      <p>Usa el menú desplegable superior izquierdo (<b>Función Activa</b>) para alternar entre las herramientas sin recargar la pantalla:</p>
+      <h3>1. Convertir PDF a EPUB</h3>
+      <p>Selecciona una carpeta o PDF, pulsa <b>Cargar</b> (con barra de progreso) y luego <b>Convertir a EPUB</b> (con barra de progreso y tiempo estimado).</p>
+      <h3>2. Cargar Libros al Kindle (Cable USB)</h3>
+      <p>Por cable USB, el Kindle no muestra archivos <code>.epub</code> sueltos si se pegan directamente en <code>documents/</code>; requiere formato nativo Kindle (<code>.azw</code> / <code>.mobi</code>) y su carpeta <code>.sdr</code>. Esta función detecta tu Kindle conectado por USB, adecúa tus libros convertidos con su carpeta <code>.sdr</code> y los transfiere directamente a <code>documents/</code>.</p>
+      <p>Para que tus libros aparezcan en la biblioteca de tu Kindle Paperwhite al enviarlos por cable USB, deben enviarse a <code>Internal Storage/documents</code> en formato <b>Kindle MOBI (<code>.mobi</code> + carpeta <code>.sdr</code>)</b>. Si el cable se desconecta a mitad de camino, usa el botón <b>Reintentar Fallidos / Continuar</b> para reanudar exactamente donde quedó sin repetir los libros ya enviados.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-p" onclick="closeManual()">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Términos -->
+<div class="modal-overlay hidden" id="terms-modal" onclick="if(event.target===this)closeTerms()">
+  <div class="modal">
+    <div class="modal-hdr"><h2 data-i18n="termsTitle">Términos y Condiciones</h2></div>
+    <div class="modal-body">
+      <h3>1. Procesamiento 100% Local</h3>
+      <p>Reflowia PDF to EPUB procesa, maqueta y transfiere todos los archivos localmente en tu equipo, sin conexión a internet, sin cuentas ni telemetría.</p>
+      <h3>2. Derechos de Autor y Prohibición de Evasión DRM</h3>
+      <p>El usuario garantiza ser titular de los derechos o contar con autorización expresa sobre los documentos PDF, EPUB o MOBI procesados. Esta herramienta procesa únicamente archivos libres de protección y <strong>no elimina, rompe ni elude sistemas de protección DRM</strong>.</p>
+      <h3>3. Propiedad Intelectual y Marcas</h3>
+      <p>Kindle es una marca registrada de Amazon.com, Inc. o sus afiliadas. Reflowia PDF to EPUB es una utilidad independiente de DMDevLabs y <strong>no está afiliada, asociada, patrocinada ni respaldada por Amazon.com, Inc.</strong></p>
+      <h3>4. Entrega "TAL CUAL" (AS IS), exclusión de responsabilidad e indemnidad</h3>
+      <p>Distribuido gratuitamente por DMDevLabs (Duver Marin · dmdevlabs.com) bajo licencia <strong>GNU GPL-3.0</strong> estrictamente <strong>"TAL CUAL" (AS IS)</strong> y <strong>"SEGÚN DISPONIBILIDAD"</strong>, sin garantías expresas, implícitas ni legales (secciones 15 y 16 de GPL-3.0). Ni DMDevLabs ni Duver Marin responden por daños directos, indirectos, incidentales o consecuentes derivados del uso, conversión o transferencia de archivos. El usuario acepta mantener indemne a DMDevLabs frente a cualquier reclamación por infracción de derechos de autor o uso indebido de documentos de terceros.</p>
+      <h3>5. Ley aplicable, jurisdicción y contacto</h3>
+      <p>Regido por las leyes de la <strong>República de Colombia</strong>; controversias ante los jueces competentes de <strong>Bogotá D.C., Colombia</strong>, previo contacto a <strong>contacto@dmdevlabs.com</strong>.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-p" onclick="closeTerms()">Cerrar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var CUR_LANG = document.documentElement.getAttribute('data-lang') || 'es';
+var CUR_FUNC = 'convert'; // 'convert' | 'usb'
+
+var I18N = {
+  es: {
+    appTitle: 'Reflowia PDF to EPUB',
+    logBtn: 'Log',
+    logModalTitle: '📋 Registro de Eventos y Errores (Log)',
+    manualBtn: 'Manual',
+    themeLight: 'Modo Claro',
+    themeDark: 'Modo Oscuro',
+    langSwitchBtn: 'English',
+    secMode: 'Función Activa',
+    optConvert: '⚡ 1. Convertir PDF a EPUB',
+    optUsb: '🔌 2. Cargar Libros al Kindle (USB)',
+    secSelect: '1. Seleccionar y Cargar',
+    btnFolder: '&#128193; Carpeta',
+    btnFiles: '&#128196; Archivo PDF',
+    btnBookFiles: '&#128196; Libros',
+    chkSubfolders: 'Incluir subcarpetas',
+    lblSelected: 'Seleccionado:',
+    noneSelected: 'Ninguna carpeta o archivo seleccionado',
+    btnLoad: '&#128229; Cargar',
+    secConvert: '2. Convertir a EPUB',
+    lblOutDir: 'Carpeta de salida',
+    btnConvert: '&#9889; Convertir a EPUB',
+    btnRetry: '&#128260; Reintentar Fallidos / Continuar',
+    btnForceAll: '&#128257; Reprocesar todos desde cero',
+    btnStop: '&#9209; Detener',
+    lblEta: 'Tiempo estimado:',
+    secSummary: '3. Resumen',
+    stLoaded: 'Archivos cargados',
+    stConverted: 'Convertidos a EPUB',
+    stErrPend: 'Fallidos / Pendientes',
+    btnOpenOut: '&#128194; Abrir Salida',
+    btnClear: '&#128465; Limpiar',
+    usbSecSelect: '1. Seleccionar Libros Convertidos',
+    btnUseConverted: '&#128218; Usar Carpeta de EPUBs Convertidos',
+    usbSecSend: '2. Enviar al Kindle por USB',
+    lblKindleDir: "Carpeta 'documents' del Kindle USB",
+    lblUsbFormat: 'Adecuación para lectura por USB',
+    fmtMobi: 'Formato Kindle MOBI (.mobi + carpeta .sdr) - Recomendado',
+    fmtAzw: 'Formato Kindle USB (.azw + carpeta .sdr)',
+    fmtEpub: 'Copiar EPUB directo (.epub + carpeta .sdr)',
+    btnUsbSend: '&#128242; Enviar al Kindle por USB',
+    stSentKindle: 'En tu Kindle',
+    btnOpenKindle: '&#128194; Abrir Kindle',
+    termsLink: 'Términos y Condiciones',
+    listTitle: 'Archivos Cargados (PDF a EPUB)',
+    listTitleUsb: 'Libros para Cargar al Kindle por USB',
+    searchPh: 'Filtrar lista... (Ctrl+F)',
+    welcomeTitle: 'Reflowia PDF to EPUB',
+    welcomeSub: '1. Selecciona una <b>Carpeta</b> o <b>Archivo PDF</b> a la izquierda.<br>2. Pulsa <b>Cargar</b> para listar los archivos.<br>3. Pulsa <b>Convertir a EPUB</b>.',
+    welcomeUsbTitle: 'Cargador de Libros a Kindle por USB',
+    welcomeUsbSub: '1. Conecta tu Kindle por cable USB y selecciona tus <b>EPUBs Convertidos</b>.<br>2. Pulsa <b>Cargar</b>.<br>3. Pulsa <b>Enviar al Kindle por USB</b> (crea el archivo nativo <code>.mobi</code> + carpeta <code>.sdr</code> en <code>Internal Storage/documents</code>).',
+    filesWord: 'archivos',
+    pagesWord: 'págs',
+    viewEpub: 'Ver Archivo',
+    manualTitle: 'Manual de Uso',
+    termsTitle: 'Términos y Condiciones'
+  },
+  en: {
+    appTitle: 'Reflowia PDF to EPUB',
+    logBtn: 'Log',
+    logModalTitle: '📋 Event & Error Log',
+    manualBtn: 'Manual',
+    themeLight: 'Light Mode',
+    themeDark: 'Dark Mode',
+    langSwitchBtn: 'Español',
+    secMode: 'Active Function',
+    optConvert: '⚡ 1. Convert PDF to EPUB',
+    optUsb: '🔌 2. Load Books to Kindle (USB)',
+    secSelect: '1. Select & Load',
+    btnFolder: '&#128193; Folder',
+    btnFiles: '&#128196; PDF File',
+    btnBookFiles: '&#128196; Books',
+    chkSubfolders: 'Include subfolders',
+    lblSelected: 'Selected:',
+    noneSelected: 'No folder or file selected',
+    btnLoad: '&#128229; Load',
+    secConvert: '2. Convert to EPUB',
+    lblOutDir: 'Output folder',
+    btnConvert: '&#9889; Convert to EPUB',
+    btnRetry: '&#128260; Retry Failed / Continue',
+    btnForceAll: '&#128257; Re-process all from scratch',
+    btnStop: '&#9209; Stop',
+    lblEta: 'Estimated time:',
+    secSummary: '3. Summary',
+    stLoaded: 'Loaded files',
+    stConverted: 'Converted to EPUB',
+    stErrPend: 'Failed / Pending',
+    btnOpenOut: '&#128194; Open Output',
+    btnClear: '&#128465; Clear',
+    usbSecSelect: '1. Select Converted Books',
+    btnUseConverted: '&#128218; Use Converted EPUBs Folder',
+    usbSecSend: '2. Send to Kindle via USB',
+    lblKindleDir: "Kindle USB 'documents' folder",
+    lblUsbFormat: 'USB Reading Format Adaptation',
+    fmtMobi: 'Kindle MOBI Format (.mobi + .sdr folder) - Recommended',
+    fmtAzw: 'Kindle USB Format (.azw + .sdr folder)',
+    fmtEpub: 'Copy Direct EPUB (.epub + .sdr folder)',
+    btnUsbSend: '&#128242; Send to Kindle via USB',
+    stSentKindle: 'On your Kindle',
+    btnOpenKindle: '&#128194; Open Kindle',
+    termsLink: 'Terms & Conditions',
+    listTitle: 'Loaded Files (PDF to EPUB)',
+    listTitleUsb: 'Books Ready for Kindle USB',
+    searchPh: 'Filter list... (Ctrl+F)',
+    welcomeTitle: 'Reflowia PDF to EPUB',
+    welcomeSub: '1. Select a <b>Folder</b> or <b>PDF File</b> on the left.<br>2. Click <b>Load</b> to scan and list files.<br>3. Click <b>Convert to EPUB</b>.',
+    welcomeUsbTitle: 'Kindle USB Book Loader',
+    welcomeUsbSub: '1. Connect your Kindle via USB cable and select your <b>Converted EPUBs</b>.<br>2. Click <b>Load</b>.<br>3. Click <b>Send to Kindle via USB</b> (creates native <code>.mobi</code> + <code>.sdr</code> folder inside <code>Internal Storage/documents</code>).',
+    filesWord: 'files',
+    pagesWord: 'pages',
+    viewEpub: 'View File',
+    manualTitle: 'User Manual',
+    termsTitle: 'Terms & Conditions'
+  }
+};
+
+var S = {
+  config: {},
+  pending: {},
+  load: {},
+  conversion: {},
+  queue: [],
+  summary: {},
+  usb: {
+    pending: {},
+    load: {},
+    transfer: {},
+    queue: [],
+    summary: {}
+  },
+  log_summary: {total: 0, errors: 0},
+  query: ''
+};
+
+var _pollTimer = null;
+var _logFilter = 'ALL';
+var _cachedLogs = [];
+
+function t(k) {
+  var d = I18N[CUR_LANG] || I18N.es;
+  return d[k] !== undefined ? d[k] : k;
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function switchFunction(mode) {
+  CUR_FUNC = mode === 'usb' ? 'usb' : 'convert';
+  document.getElementById('panel-convert').classList.toggle('hidden', CUR_FUNC !== 'convert');
+  document.getElementById('panel-usb').classList.toggle('hidden', CUR_FUNC !== 'usb');
+  renderUI();
+  if (CUR_FUNC === 'usb' && !S.config.kindle_usb_dir) {
+    usbDetectKindle(true);
+  }
+}
+
+function toggleTheme() {
+  var h = document.documentElement;
+  var c = h.getAttribute('data-theme') || 'light';
+  var n = c === 'dark' ? 'light' : 'dark';
+  h.setAttribute('data-theme', n);
+  updateThemeBtnText();
+  try { localStorage.setItem('kec-theme', n); } catch(e) {}
+}
+
+function updateThemeBtnText() {
+  var c = document.documentElement.getAttribute('data-theme') || 'light';
+  var btn = document.getElementById('theme-btn');
+  if (btn) btn.textContent = c === 'dark' ? t('themeLight') : t('themeDark');
+}
+
+function toggleLang() {
+  CUR_LANG = CUR_LANG === 'es' ? 'en' : 'es';
+  try { localStorage.setItem('kec-lang', CUR_LANG); } catch(e) {}
+  document.documentElement.setAttribute('data-lang', CUR_LANG);
+  applyLang();
+  renderUI();
+}
+
+function applyLang() {
+  document.querySelectorAll('[data-i18n]').forEach(function(el) {
+    var k = el.getAttribute('data-i18n');
+    if (k && I18N[CUR_LANG][k]) el.innerHTML = I18N[CUR_LANG][k];
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(function(el) {
+    var k = el.getAttribute('data-i18n-ph');
+    if (k && I18N[CUR_LANG][k]) el.placeholder = I18N[CUR_LANG][k];
+  });
+  var lb = document.getElementById('lang-btn');
+  if (lb) lb.textContent = I18N[CUR_LANG].langSwitchBtn;
+  updateThemeBtnText();
+}
+
+function fetchState() {
+  fetch('/api/state')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      S.config = d.config || {};
+      S.pending = d.pending || {};
+      S.load = d.load || {};
+      S.conversion = d.conversion || {};
+      S.queue = d.queue || [];
+      S.summary = d.summary || {};
+      S.usb = d.usb || {pending:{}, load:{}, transfer:{}, queue:[], summary:{}};
+      S.log_summary = d.log_summary || {total: 0, errors: 0};
+
+      renderUI();
+
+      var busy = S.load.is_loading || S.conversion.is_converting ||
+                 (S.usb.load && S.usb.load.is_loading) ||
+                 (S.usb.transfer && S.usb.transfer.is_transferring);
+      if (busy && !_pollTimer) {
+        _pollTimer = setInterval(fetchState, 300);
+      } else if (!busy && _pollTimer) {
+        clearInterval(_pollTimer);
+        _pollTimer = null;
+      }
+    })
+    .catch(function() {});
+}
+
+function renderUI() {
+  // Badge de errores en botón Log
+  var logBadge = document.getElementById('log-badge');
+  var errCnt = (S.log_summary && S.log_summary.errors) || 0;
+  if (errCnt > 0) {
+    logBadge.textContent = errCnt;
+    logBadge.classList.remove('hidden');
+  } else {
+    logBadge.classList.add('hidden');
+  }
+
+  // Sincronizar campos comunes
+  document.getElementById('chk-recursive').checked = !!S.config.recursive_scan;
+  document.getElementById('f-outdir').value = S.config.output_dir || '';
+  document.getElementById('f-kindledir').value = S.config.kindle_usb_dir || '';
+  if (S.config.usb_format) {
+    document.getElementById('f-usb-format').value = S.config.usb_format;
+  }
+
+  // Renderizar controles de Función 1 (PDF -> EPUB)
+  var selBox = document.getElementById('sel-box');
+  var selPath = document.getElementById('sel-path');
+  var btnLoad = document.getElementById('btn-load');
+  var busy1 = !!(S.load.is_loading || S.conversion.is_converting);
+
+  if (S.pending.has_selection) {
+    selBox.classList.add('active');
+    selPath.textContent = (S.pending.mode === 'Carpeta' ? '📁 ' : '📄 ') + S.pending.display_path;
+    btnLoad.disabled = busy1;
+  } else {
+    selBox.classList.remove('active');
+    selPath.textContent = t('noneSelected');
+    btnLoad.disabled = true;
+  }
+
+  var loadPbox = document.getElementById('load-pbox');
+  if (S.load.is_loading || S.load.progress_pct > 0) {
+    loadPbox.classList.remove('hidden');
+    document.getElementById('load-pfill').style.width = (S.load.progress_pct || 0) + '%';
+    document.getElementById('load-ptxt').textContent = S.load.status_text || '';
+    document.getElementById('load-ppct').textContent = (S.load.progress_pct || 0) + '%';
+  } else {
+    loadPbox.classList.add('hidden');
+  }
+
+  var isConv = !!S.conversion.is_converting;
+  var cOk = S.summary.ok || 0;
+  var cErr = S.summary.error || 0;
+  var cPend = S.summary.pending || 0;
+  var cNeedsRetryOrContinue = !isConv && S.queue.length > 0 && (cErr > 0 || (cOk > 0 && cPend > 0));
+
+  document.getElementById('btn-convert').classList.toggle('hidden', isConv || cNeedsRetryOrContinue);
+  document.getElementById('btn-conv-retry').classList.toggle('hidden', !cNeedsRetryOrContinue);
+  document.getElementById('btn-conv-force').classList.toggle('hidden', isConv || cOk === 0);
+  document.getElementById('btn-stop').classList.toggle('hidden', !isConv);
+  document.getElementById('btn-convert').disabled = busy1 || S.queue.length === 0;
+  document.getElementById('btn-conv-retry').disabled = busy1;
+  document.getElementById('btn-conv-force').disabled = busy1;
+  document.getElementById('btn-sel-folder').disabled = busy1;
+  document.getElementById('btn-sel-files').disabled = busy1;
+  document.getElementById('btn-clear').disabled = busy1 || S.queue.length === 0;
+
+  if (cNeedsRetryOrContinue) {
+    var retryLbl1 = CUR_LANG === 'en'
+      ? ('&#128260; Retry Failed (' + cErr + ') / Continue (' + cPend + ')')
+      : ('&#128260; Reintentar Fallidos (' + cErr + ') / Continuar (' + cPend + ')');
+    document.getElementById('btn-conv-retry').innerHTML = retryLbl1;
+  }
+
+  var convPbox = document.getElementById('conv-pbox');
+  if (isConv || S.conversion.progress_pct > 0) {
+    convPbox.classList.remove('hidden');
+    document.getElementById('conv-pfill').style.width = (S.conversion.progress_pct || 0) + '%';
+    document.getElementById('conv-ptxt').textContent = S.conversion.status_text || '';
+    document.getElementById('conv-ppct').textContent = (S.conversion.progress_pct || 0) + '%';
+    document.getElementById('conv-eta').textContent = S.conversion.eta_text || '--';
+  } else {
+    convPbox.classList.add('hidden');
+  }
+
+  document.getElementById('st-total').textContent = S.summary.total || 0;
+  document.getElementById('st-ok').textContent = cOk;
+  document.getElementById('st-err-pend').textContent = cErr + ' / ' + cPend;
+
+  // Renderizar controles de Función 2 (Cargar al Kindle por USB)
+  var uPend = S.usb.pending || {};
+  var uLoad = S.usb.load || {};
+  var uTrans = S.usb.transfer || {};
+  var uQueue = S.usb.queue || [];
+  var uSum = S.usb.summary || {};
+  var busy2 = !!(uLoad.is_loading || uTrans.is_transferring);
+
+  var uSelBox = document.getElementById('usb-sel-box');
+  var uSelPath = document.getElementById('usb-sel-path');
+  var uBtnLoad = document.getElementById('btn-usb-load');
+
+  if (uPend.has_selection) {
+    uSelBox.classList.add('active');
+    uSelPath.textContent = (uPend.mode === 'Carpeta' ? '📁 ' : '📄 ') + uPend.display_path;
+    uBtnLoad.disabled = busy2;
+  } else {
+    uSelBox.classList.remove('active');
+    uSelPath.textContent = t('noneSelected');
+    uBtnLoad.disabled = true;
+  }
+
+  var uLoadPbox = document.getElementById('usb-load-pbox');
+  if (uLoad.is_loading || uLoad.progress_pct > 0) {
+    uLoadPbox.classList.remove('hidden');
+    document.getElementById('usb-load-pfill').style.width = (uLoad.progress_pct || 0) + '%';
+    document.getElementById('usb-load-ptxt').textContent = uLoad.status_text || '';
+    document.getElementById('usb-load-ppct').textContent = (uLoad.progress_pct || 0) + '%';
+  } else {
+    uLoadPbox.classList.add('hidden');
+  }
+
+  var isTrans = !!uTrans.is_transferring;
+  var uOk = uSum.ok || 0;
+  var uErr = uSum.error || 0;
+  var uPendCnt = uSum.pending || 0;
+  var uNeedsRetryOrContinue = !isTrans && uQueue.length > 0 && (uErr > 0 || (uOk > 0 && uPendCnt > 0));
+
+  document.getElementById('btn-usb-send').classList.toggle('hidden', isTrans || uNeedsRetryOrContinue);
+  document.getElementById('btn-usb-retry').classList.toggle('hidden', !uNeedsRetryOrContinue);
+  document.getElementById('btn-usb-force').classList.toggle('hidden', isTrans || uOk === 0);
+  document.getElementById('btn-usb-stop').classList.toggle('hidden', !isTrans);
+  document.getElementById('btn-usb-send').disabled = busy2 || uQueue.length === 0;
+  document.getElementById('btn-usb-retry').disabled = busy2;
+  document.getElementById('btn-usb-force').disabled = busy2;
+  document.getElementById('btn-usb-conv').disabled = busy2;
+  document.getElementById('btn-usb-folder').disabled = busy2;
+  document.getElementById('btn-usb-files').disabled = busy2;
+  document.getElementById('btn-usb-clear').disabled = busy2 || uQueue.length === 0;
+
+  if (uNeedsRetryOrContinue) {
+    var retryLbl2 = CUR_LANG === 'en'
+      ? ('&#128260; Retry Failed (' + uErr + ') / Continue (' + uPendCnt + ')')
+      : ('&#128260; Reintentar Fallidos (' + uErr + ') / Continuar (' + uPendCnt + ')');
+    document.getElementById('btn-usb-retry').innerHTML = retryLbl2;
+  }
+
+  var uSendPbox = document.getElementById('usb-send-pbox');
+  if (isTrans || uTrans.progress_pct > 0) {
+    uSendPbox.classList.remove('hidden');
+    document.getElementById('usb-send-pfill').style.width = (uTrans.progress_pct || 0) + '%';
+    document.getElementById('usb-send-ptxt').textContent = uTrans.status_text || '';
+    document.getElementById('usb-send-ppct').textContent = (uTrans.progress_pct || 0) + '%';
+    document.getElementById('usb-send-eta').textContent = uTrans.eta_text || '--';
+  } else {
+    uSendPbox.classList.add('hidden');
+  }
+
+  document.getElementById('st-usb-total').textContent = uSum.total || 0;
+  document.getElementById('st-usb-ok').textContent = uOk;
+  document.getElementById('st-usb-err-pend').textContent = uErr + ' / ' + uPendCnt;
+
+  // Cabecera y lista según la función activa en el menú desplegable
+  var activeList = CUR_FUNC === 'usb' ? uQueue : S.queue;
+  document.getElementById('main-list-title').textContent = CUR_FUNC === 'usb' ? t('listTitleUsb') : t('listTitle');
+  document.getElementById('ch-sub').textContent = activeList.length + ' ' + t('filesWord');
+
+  renderList(activeList);
+}
+
+var _lastListSig = '';
+
+function renderList(activeList) {
+  var box = document.getElementById('msgs');
+  var isBusy = CUR_FUNC === 'usb'
+    ? !!(S.usb.transfer && S.usb.transfer.is_transferring)
+    : !!S.conversion.is_converting;
+
+  var sig = CUR_FUNC + '|' + CUR_LANG + '|' + S.query + '|' + (isBusy ? '1' : '0') + '|' +
+    activeList.map(function(i) { return i.id + ':' + i.status + ':' + i.message + ':' + (i.pages || 0); }).join(';');
+  if (sig === _lastListSig) return;
+  _lastListSig = sig;
+
+  if (!activeList.length) {
+    var wTitle = CUR_FUNC === 'usb' ? t('welcomeUsbTitle') : t('welcomeTitle');
+    var wSub = CUR_FUNC === 'usb' ? t('welcomeUsbSub') : t('welcomeSub');
+    box.innerHTML =
+      '<div class="welcome">' +
+        '<h2>' + wTitle + '</h2>' +
+        '<p>' + wSub + '</p>' +
+      '</div>';
+    document.getElementById('s-cnt').textContent = '';
+    return;
+  }
+
+  var q = S.query.toLowerCase();
+  var filtered = activeList.filter(function(item) {
+    return !q || item.name.toLowerCase().indexOf(q) !== -1;
+  });
+
+  document.getElementById('s-cnt').textContent = q ? (filtered.length + '/' + activeList.length) : '';
+
+  box.innerHTML = filtered.map(function(item) {
+    var doneClass = item.status === 'ok' ? ' done' : '';
+    var stClass = 'item-status';
+    if (item.status === 'error') stClass += ' err';
+    else if (item.status === 'converting') stClass += ' work';
+
+    var stPrefix = item.status === 'ok' ? '✅ ' : (item.status === 'error' ? '⚠️ ' : (item.status === 'converting' ? '⏳ ' : ''));
+    var nameHtml = q ? highlight(item.name, S.query) : esc(item.name);
+    var badgeIcon = CUR_FUNC === 'usb' ? (item.ext || 'EPUB') : 'PDF';
+
+    var subInfo = item.size_mb + ' MB';
+    if (CUR_FUNC === 'convert' && item.pages) {
+      subInfo += ' &bull; ' + item.pages + ' ' + t('pagesWord');
+    }
+    subInfo += ' &bull; ' + esc(item.folder);
+
+    var actionBtn = '';
+    if (item.status === 'ok') {
+      var locType = CUR_FUNC === 'usb' ? 'usb_item' : 'item';
+      actionBtn = '<button class="btn btn-s" style="padding:5px 10px;font-size:11px" onclick="openItemLocation(\'' + locType + '\',' + item.id + ')">' + t('viewEpub') + '</button>';
+    } else if (!isBusy) {
+      var fnRemove = CUR_FUNC === 'usb' ? 'usbRemoveItem(' + item.id + ')' : 'removeItem(' + item.id + ')';
+      actionBtn = '<button class="btn-x" onclick="' + fnRemove + '" title="Quitar">&times;</button>';
+    }
+
+    return '<div class="item-row' + doneClass + '">' +
+      '<div class="item-icon">' + esc(badgeIcon) + '</div>' +
+      '<div class="item-info">' +
+        '<div class="item-name">' + nameHtml + '</div>' +
+        '<div class="item-sub">' + subInfo + '</div>' +
+      '</div>' +
+      '<div class="' + stClass + '">' + stPrefix + esc(item.message) + '</div>' +
+      actionBtn +
+    '</div>';
+  }).join('');
+}
+
+function highlight(text, q) {
+  var idx = text.toLowerCase().indexOf(q.toLowerCase());
+  if (idx < 0) return esc(text);
+  return esc(text.slice(0, idx)) +
+    '<mark class="hl">' + esc(text.slice(idx, idx + q.length)) + '</mark>' +
+    esc(text.slice(idx + q.length));
+}
+
+/* ── Acciones Función 1 (PDF -> EPUB) ── */
+function selectFolder() {
+  fetch('/api/select-folder', {method: 'POST'}).then(function() { fetchState(); });
+}
+function selectFiles() {
+  fetch('/api/select-files', {method: 'POST'}).then(function() { fetchState(); });
+}
+function startLoad() {
+  fetch('/api/load/start', {method: 'POST'}).then(function() { fetchState(); });
+}
+function pickOutputFolder() {
+  fetch('/api/pick-output', {method: 'POST'}).then(function() { fetchState(); });
+}
+function saveConfig() {
+  fetch('/api/config', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({recursive_scan: document.getElementById('chk-recursive').checked})
+  }).then(function() { fetchState(); });
+}
+function startConversion(mode) {
+  fetch('/api/convert/start', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({mode: mode || 'continue'})
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.error) alert(d.error);
+    fetchState();
+  });
+}
+function stopConversion() {
+  fetch('/api/convert/stop', {method: 'POST'}).then(function() { fetchState(); });
+}
+function removeItem(id) {
+  fetch('/api/queue/remove', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({id: id})
+  }).then(function() { fetchState(); });
+}
+function clearQueue() {
+  fetch('/api/queue/clear', {method: 'POST'}).then(function() { fetchState(); });
+}
+
+/* ── Acciones Función 2 (Cargar al Kindle por USB) ── */
+function usbSelectConverted() {
+  fetch('/api/usb/select-converted', {method: 'POST'}).then(function() { fetchState(); });
+}
+function usbSelectFolder() {
+  fetch('/api/usb/select-folder', {method: 'POST'}).then(function() { fetchState(); });
+}
+function usbSelectFiles() {
+  fetch('/api/usb/select-files', {method: 'POST'}).then(function() { fetchState(); });
+}
+function usbStartLoad() {
+  fetch('/api/usb/load/start', {method: 'POST'}).then(function() { fetchState(); });
+}
+function usbDetectKindle(silent) {
+  fetch('/api/usb/detect-kindle', {method: 'POST'})
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var sel = document.getElementById('f-kindle-detected');
+      if (d.detected && d.detected.length > 0) {
+        sel.classList.remove('hidden');
+        sel.innerHTML = d.detected.map(function(item) {
+          var isSel = (d.kindle_usb_dir === item.path) ? ' selected' : '';
+          return '<option value="' + esc(item.path) + '"' + isSel + '>&#9989; ' + esc(item.label) + '</option>';
+        }).join('');
+      } else {
+        sel.classList.add('hidden');
+        if (!silent) {
+          alert('No se detectó ningún Kindle conectado por USB/MTP. Verifica que esté desbloqueado y conectado por cable, o pulsa "..." para elegirlo desde Este Equipo.');
+        }
+      }
+      fetchState();
+    });
+}
+function onDetectedKindleChange(val) {
+  if (!val) return;
+  fetch('/api/config', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({kindle_usb_dir: val})
+  }).then(function() { fetchState(); });
+}
+function usbPickKindleDir() {
+  fetch('/api/usb/pick-kindle-dir', {method: 'POST'}).then(function() { fetchState(); });
+}
+function saveUsbFormat() {
+  fetch('/api/config', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({usb_format: document.getElementById('f-usb-format').value})
+  }).then(function() { fetchState(); });
+}
+function usbStartTransfer(mode) {
+  fetch('/api/usb/transfer/start', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({mode: mode || 'continue'})
+  }).then(function(r) { return r.json(); }).then(function(d) {
+    if (d.error) alert(d.error);
+    fetchState();
+  });
+}
+function usbStopTransfer() {
+  fetch('/api/usb/transfer/stop', {method: 'POST'}).then(function() { fetchState(); });
+}
+function usbRemoveItem(id) {
+  fetch('/api/usb/queue/remove', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({id: id})
+  }).then(function() { fetchState(); });
+}
+function usbClearQueue() {
+  fetch('/api/usb/queue/clear', {method: 'POST'}).then(function() { fetchState(); });
+}
+
+/* ── Visor de Log ── */
+function showLogs() {
+  document.getElementById('log-modal').classList.remove('hidden');
+  refreshLogs();
+}
+function closeLogs() {
+  document.getElementById('log-modal').classList.add('hidden');
+}
+function setLogFilter(flt) {
+  _logFilter = flt;
+  renderLogModal();
+}
+function refreshLogs() {
+  fetch('/api/logs')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      _cachedLogs = d.logs || [];
+      renderLogModal();
+    });
+}
+function clearAppLogs() {
+  fetch('/api/logs/clear', {method: 'POST'}).then(function() {
+    _cachedLogs = [];
+    renderLogModal();
+    fetchState();
+  });
+}
+function renderLogModal() {
+  var box = document.getElementById('log-list');
+  var rows = _cachedLogs.filter(function(l) {
+    if (_logFilter === 'ERROR') return l.level === 'ERROR' || l.level === 'WARN';
+    return true;
+  });
+  if (!rows.length) {
+    box.innerHTML = '<div style="color:var(--dim);padding:12px">Sin registros para mostrar.</div>';
+    return;
+  }
+  box.innerHTML = rows.slice().reverse().map(function(l) {
+    return '<div class="log-line ' + esc(l.level) + '">' +
+      '<span class="log-ts">[' + esc(l.time) + ']</span>' +
+      '<span class="log-mod">' + esc(l.module) + '</span>' +
+      '<span>' + esc(l.message) + '</span>' +
+    '</div>';
+  }).join('');
+}
+
+/* ── Abrir Carpetas / Archivos ── */
+function openLocation(type) {
+  fetch('/api/open-location', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({type: type})
+  });
+}
+function openItemLocation(type, id) {
+  fetch('/api/open-location', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({type: type, id: id})
+  });
+}
+
+function showManual() { document.getElementById('manual-modal').classList.remove('hidden'); }
+function closeManual() { document.getElementById('manual-modal').classList.add('hidden'); }
+function showTerms() { document.getElementById('terms-modal').classList.remove('hidden'); }
+function closeTerms() { document.getElementById('terms-modal').classList.add('hidden'); }
+
+document.addEventListener('DOMContentLoaded', function() {
+  applyLang();
+  fetchState();
+
+  var si = document.getElementById('search');
+  si.addEventListener('input', function() {
+    S.query = si.value.trim();
+    renderUI();
+  });
+  document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'f') { e.preventDefault(); si.focus(); si.select(); }
+    if (e.key === 'Escape') {
+      closeLogs();
+      closeManual();
+      closeTerms();
+    }
+  });
+});
+</script>
+</body>
+</html>
