@@ -28,3 +28,7 @@ __pycache__/
 # Generado automáticamente en build.bat
 version_info.txt
 
+
+# Registro y reportes de sesión que genera la app al usarla (pueden tener rutas del equipo)
+reflowia.log
+ia/sesion_*_[0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F][0-9A-F].md

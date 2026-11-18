@@ -1,4 +1,4 @@
-"""Generate app icon for Kindle EPUB Converter - DMDevLabs style."""
+"""Generate the Reflowia PDF to EPUB app icon (DMDev Labs)."""
 from PIL import Image, ImageDraw
 import os
 

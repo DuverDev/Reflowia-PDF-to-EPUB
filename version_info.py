@@ -1,7 +1,7 @@
 """Generate version_info.txt for PyInstaller --version-file."""
 import os
 
-VERSION = (1, 2, 0, 0)
+VERSION = (1, 2, 1, 0)
 
 info = f"""# UTF-8
 VSVersionInfo(
@@ -21,15 +21,15 @@ VSVersionInfo(
         StringTable(
           '040904B0',
           [
-            StringStruct('CompanyName', 'DMDevLabs'),
+            StringStruct('CompanyName', 'DMDev Labs'),
             StringStruct('FileDescription', 'Reflowia PDF to EPUB - Conversor Universal de PDF a EPUB'),
             StringStruct('FileVersion', '{VERSION[0]}.{VERSION[1]}.{VERSION[2]}.{VERSION[3]}'),
             StringStruct('InternalName', 'Reflowia PDF to EPUB'),
-            StringStruct('LegalCopyright', 'Copyright (C) 2026 DMDevLabs - GPL-3.0 License'),
+            StringStruct('LegalCopyright', 'Copyright (C) 2026 DMDev Labs - GPL-3.0 License'),
             StringStruct('OriginalFilename', 'Reflowia PDF to EPUB.exe'),
             StringStruct('ProductName', 'Reflowia PDF to EPUB'),
             StringStruct('ProductVersion', '{VERSION[0]}.{VERSION[1]}.{VERSION[2]}'),
-            StringStruct('LegalTrademarks', 'Reflowia PDF to EPUB by DMDevLabs'),
+            StringStruct('LegalTrademarks', 'Reflowia PDF to EPUB by DMDev Labs'),
           ]
         )
       ]

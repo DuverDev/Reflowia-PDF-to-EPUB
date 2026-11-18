@@ -154,6 +154,31 @@ def _bg_init_kindle() -> None:
 threading.Thread(target=_bg_init_kindle, daemon=True).start()
 
 
+# ==============================================================================
+# SOLO LA PROPIA VENTANA DE LA APP
+# El servidor escucha en 127.0.0.1, pero cualquier página web abierta en el
+# navegador podría enviarle peticiones (CSRF) o apuntarle un dominio propio
+# (DNS rebinding). Se exige Host local y, en las peticiones que cambian algo,
+# que vengan del mismo origen.
+# ==============================================================================
+_LOCAL_HOSTS = {"127.0.0.1", "localhost"}
+
+
+@app.before_request
+def _solo_peticiones_locales():
+    host = (request.host or "").rsplit(":", 1)[0].strip("[]").lower()
+    if host not in _LOCAL_HOSTS:
+        return jsonify({"error": "Host no permitido"}), 403
+    if request.method not in ("GET", "HEAD", "OPTIONS"):
+        origin = request.headers.get("Origin")
+        if origin is not None and origin.rstrip("/") != request.host_url.rstrip("/"):
+            return jsonify({"error": "Origen no permitido"}), 403
+        site = request.headers.get("Sec-Fetch-Site")
+        if site is not None and site not in ("same-origin", "none"):
+            return jsonify({"error": "Origen no permitido"}), 403
+    return None
+
+
 @app.after_request
 def no_cache(response):
     response.headers["Cache-Control"] = "no-store"

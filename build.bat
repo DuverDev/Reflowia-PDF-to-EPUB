@@ -5,7 +5,6 @@ echo Compilando Reflowia PDF to EPUB (Unico Ejecutable Portable)...
 echo.
 
 taskkill /F /T /IM "Reflowia PDF to EPUB.exe" >nul 2>nul
-taskkill /F /T /IM "Kindle EPUB Converter.exe" >nul 2>nul
 if exist "dist\_old_reflowia.bak" del /f /q "dist\_old_reflowia.bak" >nul 2>nul
 if exist "dist\Reflowia PDF to EPUB.exe" (
     del /f /q "dist\Reflowia PDF to EPUB.exe" >nul 2>nul
@@ -40,7 +39,6 @@ if errorlevel 1 (
     exit /b 1
 )
 
-if exist "dist\Kindle EPUB Converter.exe" del /f /q "dist\Kindle EPUB Converter.exe"
 if exist "dist\ia" rmdir /s /q "dist\ia"
 if exist "dist\EPUBs_Kindle" rmdir /s /q "dist\EPUBs_Kindle"
 

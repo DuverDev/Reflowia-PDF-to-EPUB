@@ -1,6 +1,6 @@
 # 📱 Perfiles de Pantalla para Kindle de Varios Tamaños
 
-Uno de los pilares de **Atelier Kindle** es garantizar que el EPUB generado se lea con proporciones tipográficas e imágenes nítidas en **cualquier tamaño de Amazon Kindle**, desde el modelo compacto de 6 pulgadas hasta el Kindle Scribe de 10.2 pulgadas.
+Uno de los pilares de **Reflowia PDF to EPUB** es garantizar que el EPUB generado se lea con proporciones tipográficas e imágenes nítidas en **cualquier tamaño de Amazon Kindle**, desde el modelo compacto de 6 pulgadas hasta el Kindle Scribe de 10.2 pulgadas.
 
 ---
 

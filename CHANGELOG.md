@@ -1,5 +1,15 @@
 # Cambios / Changelog
 
+## 1.2.1 — 2026-11-18
+
+### Seguridad
+- **Servidor local blindado:** la API en `127.0.0.1` solo atiende a la propia ventana de la app. Rechaza peticiones de otros sitios web (CSRF) y de otros dominios (DNS rebinding), que antes podían iniciar conversiones o transferencias al Kindle.
+
+### Legal y marca
+- Condiciones de uso iguales a las de [dmdevlabs.com/terminos](https://dmdevlabs.com/terminos), en español e inglés (cambian con el idioma de la app) y en `TERMINOS.md`.
+- Licencia GPL-3.0 completa en `LICENSE`; marca unificada como **DMDev Labs**.
+- Quitados restos de nombres anteriores y reportes de sesión generados por la app (`reflowia.log` y reportes automáticos quedan fuera de git).
+
 ## 1.2.0 — 2026-11-14
 
 ### Interfaz, estabilidad y legal
