@@ -210,12 +210,14 @@ def _native_pick_files(initial_dir: str, filter_str: str = "Archivos PDF (*.pdf)
     except Exception:
         pass
 
+    # Los valores llegan por variables de entorno, nunca dentro del comando: una carpeta con comillas
+    # (`O'Reilly`, o un nombre preparado) rompía el selector o ejecutaba código (SEC-087)
     ps_script = (
         "Add-Type -AssemblyName System.Windows.Forms; "
         "$f = New-Object System.Windows.Forms.OpenFileDialog; "
-        f"$f.Filter = '{filter_str}'; "
+        "$f.Filter = $env:RFW_FILTRO; "
         "$f.Multiselect = $true; "
-        f"if (Test-Path '{initial_dir}') {{ $f.InitialDirectory = '{initial_dir}' }}; "
+        "if ($env:RFW_CARPETA -and (Test-Path -LiteralPath $env:RFW_CARPETA)) { $f.InitialDirectory = $env:RFW_CARPETA }; "
         "if ($f.ShowDialog() -eq 'OK') { $f.FileNames -join '|' }"
     )
     try:
@@ -223,6 +225,7 @@ def _native_pick_files(initial_dir: str, filter_str: str = "Archivos PDF (*.pdf)
             ["powershell", "-NoProfile", "-STA", "-Command", ps_script],
             text=True,
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            env={**os.environ, "RFW_FILTRO": str(filter_str), "RFW_CARPETA": str(initial_dir or "")},
         ).strip()
         return [p for p in out.split("|") if p.strip()] if out else []
     except Exception:
@@ -249,8 +252,8 @@ def _native_pick_folder(initial_dir: str, title: str) -> Optional[str]:
     ps_script = (
         "Add-Type -AssemblyName System.Windows.Forms; "
         "$d = New-Object System.Windows.Forms.FolderBrowserDialog; "
-        f"$d.Description = '{title}'; "
-        f"if (Test-Path '{initial_dir}') {{ $d.SelectedPath = '{initial_dir}' }}; "
+        "$d.Description = $env:RFW_TITULO; "
+        "if ($env:RFW_CARPETA -and (Test-Path -LiteralPath $env:RFW_CARPETA)) { $d.SelectedPath = $env:RFW_CARPETA }; "
         "if ($d.ShowDialog() -eq 'OK') { $d.SelectedPath }"
     )
     try:
@@ -258,6 +261,7 @@ def _native_pick_folder(initial_dir: str, title: str) -> Optional[str]:
             ["powershell", "-NoProfile", "-STA", "-Command", ps_script],
             text=True,
             creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            env={**os.environ, "RFW_TITULO": str(title), "RFW_CARPETA": str(initial_dir or "")},
         ).strip()
         return out if out else None
     except Exception:

@@ -1,4 +1,4 @@
-# Reflowia PDF to EPUB (v1.2.2)
+# Reflowia PDF to EPUB (v1.2.3)
 
 Conversor universal de documentos **PDF a EPUB** con texto fluido (*reflowable*), para lectores Kindle y otros lectores electrónicos.
 
